@@ -1,177 +1,321 @@
-# Lab P4 — BluePrints en Tiempo Real (Sockets & STOMP)
+# Lab 5 ARSW BluePrints Real-Time Collaboration with Socket.IO - Juan Esteban Rodriguez
 
-> **Repositorio:** `DECSIS-ECI/Lab_P4_BluePrints_RealTime-Sokets`  
-> **Front:** React + Vite (Canvas, CRUD, y selector de tecnología RT)  
-> **Backends guía (elige uno o compáralos):**
-> - **Socket.IO (Node.js):** https://github.com/DECSIS-ECI/example-backend-socketio-node-/blob/main/README.md
-> - **STOMP (Spring Boot):** https://github.com/DECSIS-ECI/example-backend-stopm/tree/main
+## Overview
 
-## 🎯 Objetivo del laboratorio
-Implementar **colaboración en tiempo real** para el caso de BluePrints. El Front consume la API CRUD de la Parte 3 (o equivalente) y habilita tiempo real usando **Socket.IO** o **STOMP**, para que múltiples clientes dibujen el mismo plano de forma simultánea.
+This project implements real-time collaborative drawing for BluePrints (Lab 4) using **React**, **Node.js**, and **Socket.IO**.
 
-Al finalizar, el equipo debe:
-1. Integrar el Front con su **API CRUD** (listar/crear/actualizar/eliminar planos, y total de puntos por autor).
-2. Conectar el Front a un backend de **tiempo real** (Socket.IO **o** STOMP) siguiendo los repos guía.
-3. Demostrar **colaboración en vivo** (dos pestañas navegando el mismo plano).
+The solution combines:
+
+- **Spring Boot API** for REST operations and blueprint persistence. Located in the lab 4 repository
+- **Node.js + Socket.IO** server for real-time communication.
+- **React (Vite)** frontend for drawing and collaboration.
+
+The application allows multiple users to open the same blueprint and see drawing updates almost instantly.
 
 ---
 
-## 🧩 Alcance y criterios funcionales
-- **CRUD** (REST):
-  - `GET /api/blueprints?author=:author` → lista por autor (incluye total de puntos).
-  - `GET /api/blueprints/:author/:name` → puntos del plano.
-  - `POST /api/blueprints` → crear.
-  - `PUT /api/blueprints/:author/:name` → actualizar.
-  - `DELETE /api/blueprints/:author/:name` → eliminar.
-- **Tiempo real (RT)** (elige uno):
-  - **Socket.IO** (rooms): `join-room`, `draw-event` → broadcast `blueprint-update`.
-  - **STOMP** (topics): `@MessageMapping("/draw")` → `convertAndSend(/topic/blueprints.{author}.{name})`.
-- **UI**:
-  - Canvas con **dibujo por clic** (incremental).
-  - Panel del autor: **tabla** de planos y **total de puntos** (`reduce`).
-  - Barra de acciones: **Create / Save/Update / Delete** y **selector de tecnología** (None / Socket.IO / STOMP).
-- **DX/Calidad**: código limpio, manejo de errores, README de equipo.
+
+
+## Technologies
+
+- React 
+- Vite
+- Socket.IO
+- Node.js
+- Express
+- Spring Boot
+- PostgreSQL
 
 ---
 
-## 🏗️ Arquitectura (visión rápida)
+# Setup
 
-```
-React (Vite)
- ├─ HTTP (REST CRUD + estado inicial) ───────────────> Tu API (P3 / propia)
- └─ Tiempo Real (elige uno):
-     ├─ Socket.IO: join-room / draw-event ──────────> Socket.IO Server (Node)
-     └─ STOMP: /app/draw -> /topic/blueprints.* ────> Spring WebSocket/STOMP
-```
+## 1. Start the Spring Boot API
 
-**Convenciones recomendadas**  
-- **Plano como canal/sala**: `blueprints.{author}.{name}`  
-- **Payload de punto**: `{ x, y }`
+Run the Spring Boot application:
 
----
-
-## 📦 Repos guía (clona/consulta)
-- **Socket.IO (Node.js)**: https://github.com/DECSIS-ECI/example-backend-socketio-node-/blob/main/README.md  
-  - *Uso típico en el cliente:* `io(VITE_IO_BASE, { transports: ['websocket'] })`, `join-room`, `draw-event`, `blueprint-update`.
-- **STOMP (Spring Boot)**: https://github.com/DECSIS-ECI/example-backend-stopm/tree/main  
-  - *Uso típico en el cliente:* `@stomp/stompjs` → `client.publish('/app/draw', body)`; suscripción a `/topic/blueprints.{author}.{name}`.
-
----
-
-## ⚙️ Variables de entorno (Front)
-Crea `.env.local` en la raíz del proyecto **Front**:
 ```bash
-# REST (tu backend CRUD)
-VITE_API_BASE=http://localhost:8080
-
-# Tiempo real: apunta a uno u otro según el backend que uses
-VITE_IO_BASE=http://localhost:3001     # si usas Socket.IO (Node)
-VITE_STOMP_BASE=http://localhost:8080  # si usas STOMP (Spring)
+mvn spring-boot:run
 ```
-En la UI, selecciona la tecnología en el **selector RT**.
+
+REST API:
+
+```
+http://localhost:8082
+```
 
 ---
 
-## 🚀 Puesta en marcha
+## 2. Install frontend dependencies
 
-### 1) Backend RT (elige uno)
+Inside `frontend-react`:
 
-**Opción A — Socket.IO (Node.js)**  
-Sigue el README del repo guía:  
-https://github.com/DECSIS-ECI/example-backend-socketio-node-/blob/main/README.md
 ```bash
-npm i
+npm install
+```
+
+Install Socket.IO server dependencies:
+
+```bash
+npm install express socket.io cors
+```
+
+---
+
+## 3. Environment variables
+
+Create a file named `.env.local` in the project root:
+
+```env
+VITE_API_BASE=http://localhost:8082
+VITE_IO_BASE=http://localhost:3001
+```
+
+---
+
+## 4. Start the Socket.IO server
+
+```bash
+npm run server
+```
+
+Server:
+
+```
+http://localhost:3001
+```
+
+---
+
+## 5. Start the React application
+
+```bash
 npm run dev
-# expone: http://localhost:3001
-# prueba rápida del estado inicial:
-curl http://localhost:3001/api/blueprints/juan/plano-1
 ```
 
-**Opción B — STOMP (Spring Boot)**  
-Sigue el repo guía:  
-https://github.com/DECSIS-ECI/example-backend-stopm/tree/main
-```bash
-./mvnw spring-boot:run
-# expone: http://localhost:8080
-# endpoint WS (ej.): /ws-blueprints
+Frontend:
+
+```
+http://localhost:5173
 ```
 
-### 2) Front (este repo)
-```bash
-npm i
-npm run dev
-# http://localhost:5173
+---
+
+# REST Endpoints Used
+
+The frontend loads the initial state of the blueprint using HTTP.
+
+### Get Blueprint
+
+```http
+GET /api/blueprints/{author}/{name}
 ```
-En la interfaz: selecciona **Socket.IO** o **STOMP**, define `author` y `name`, abre **dos pestañas** y dibuja en el canvas (clics).
+
+Example:
+
+```http
+GET /api/blueprints/juan/plano-1
+```
+
+Response:
+
+```json
+{
+  "author": "juan",
+  "name": "plano-1",
+  "points": [
+    {
+      "x": 10,
+      "y": 10
+    },
+    {
+      "x": 40,
+      "y": 50
+    }
+  ]
+}
+```
 
 ---
 
-## 🔌 Protocolos de Tiempo Real (detalle mínimo)
+# Socket.IO Events
 
-### A) Socket.IO
-- **Unirse a sala**
-  ```js
-  socket.emit('join-room', `blueprints.${author}.${name}`)
-  ```
-- **Enviar punto**
-  ```js
-  socket.emit('draw-event', { room, author, name, point: { x, y } })
-  ```
-- **Recibir actualización**
-  ```js
-  socket.on('blueprint-update', (upd) => { /* append points y repintar */ })
-  ```
+## Join Room
 
-### B) STOMP
-- **Publicar punto**
-  ```js
-  client.publish({ destination: '/app/draw', body: JSON.stringify({ author, name, point }) })
-  ```
-- **Suscribirse a tópico**
-  ```js
-  client.subscribe(`/topic/blueprints.${author}.${name}`, (msg) => { /* append points y repintar */ })
-  ```
+Client → Server
+
+```javascript
+socket.emit(
+  'join-room',
+  `blueprints.${author}.${name}`
+)
+```
 
 ---
 
-## 🧪 Casos de prueba mínimos
-- **Estado inicial**: al seleccionar plano, el canvas carga puntos (`GET /api/blueprints/:author/:name`).  
-- **Dibujo local**: clic en canvas agrega puntos y redibuja.  
-- **RT multi-pestaña**: con 2 pestañas, los puntos se **replican** casi en tiempo real.  
-- **CRUD**: Create/Save/Delete funcionan y refrescan la lista y el **Total** del autor.
+## Draw Event
+
+Client → Server
+
+```javascript
+socket.emit(
+  'draw-event',
+  {
+    room: `blueprints.${author}.${name}`,
+    author,
+    name,
+    point: {
+      x,
+      y
+    }
+  }
+)
+```
 
 ---
 
-## 📊 Entregables del equipo
-1. Código del Front integrado con **CRUD** y **RT** (Socket.IO o STOMP).  
-2. **Video corto** (≤ 90s) mostrando colaboración en vivo y operaciones CRUD.  
-3. **README del equipo**: setup, endpoints usados, decisiones (rooms/tópicos), y (opcional) breve comparativa Socket.IO vs STOMP.
+## Blueprint Update
+
+Server → Clients
+
+Event:
+
+```javascript
+'blueprint-update'
+```
+
+Payload:
+
+```json
+{
+  "author": "juan",
+  "name": "plano-1",
+  "points": [
+    {
+      "x": 120,
+      "y": 80
+    }
+  ]
+}
+```
 
 ---
 
-## 🧮 Rúbrica sugerida
-- **Funcionalidad (40%)**: RT estable (join/broadcast), aislamiento por plano, CRUD operativo.  
-- **Calidad técnica (30%)**: estructura limpia, manejo de errores, documentación clara.  
-- **Observabilidad/DX (15%)**: logs útiles (conexión, eventos), health checks básicos.  
-- **Análisis (15%)**: hallazgos (latencia/reconexión) y, si aplica, pros/cons Socket.IO vs STOMP.
+# Design Decisions
+
+## Rooms
+
+A Socket.IO room was created for every blueprint.
+
+Naming convention:
+
+```
+blueprints.{author}.{name}
+```
+
+Examples:
+
+```
+blueprints.juan.plano-1
+blueprints.john.house
+blueprints.maria.garden
+```
+
+This approach guarantees that:
+
+- only users viewing the same blueprint receive updates;
+- multiple blueprints can be edited simultaneously;
+- communication remains isolated and efficient.
 
 ---
 
-## 🩺 Troubleshooting
-- **Pantalla en blanco (Front)**: revisa consola; confirma `@vitejs/plugin-react` instalado y que `AppP4.jsx` esté en `src/`.  
-- **No hay broadcast**: ambas pestañas deben hacer `join-room` al **mismo** plano (Socket.IO) o suscribirse al **mismo tópico** (STOMP).  
-- **CORS**: en dev permite `http://localhost:5173`; en prod, **restringe orígenes**.  
-- **Socket.IO no conecta**: fuerza transporte WebSocket `{ transports: ['websocket'] }`.  
-- **STOMP no recibe**: verifica `brokerURL`/`webSocketFactory` y los prefijos `/app` y `/topic` en Spring.
+## Incremental Updates
+
+Instead of sending the entire blueprint after every click, only the new point is broadcast:
+
+```json
+{
+  "points": [
+    {
+      "x": 120,
+      "y": 80
+    }
+  ]
+}
+```
+
+Advantages:
+
+- lower network traffic;
+- lower latency;
+- better scalability.
 
 ---
 
-## 🔐 Seguridad (mínimos)
-- Validación de payloads (p. ej., zod/joi).  
-- Restricción de orígenes en prod.  
-- Opcional: **JWT** + autorización por plano/sala.
+## State Loading
+
+When a blueprint is opened:
+
+1. The frontend performs an HTTP GET request to obtain existing points.
+2. The user joins the corresponding Socket.IO room.
+3. Every new point is distributed through `blueprint-update`.
 
 ---
 
-## 📄 Licencia
-MIT (o la definida por el curso/equipo).
+# Testing
+
+1. Start Spring Boot.
+2. Start the Socket.IO server.
+3. Start the React application.
+4. Open:
+
+```
+http://localhost:5173
+```
+
+in two browser tabs.
+
+5. Use the same values:
+
+```
+Author: juan
+Blueprint: plano-1
+```
+
+6. Click on the canvas.
+
+Expected result:
+
+- the point appears immediately in the current tab;
+- the point is replicated in the second tab;
+- both clients remain synchronized in real time.
+
+---
+
+# Project Structure
+
+```
+frontend-react
+│
+├── src
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── lib
+│       └── socketIoClient.js
+│
+├── server.js
+├── package.json
+├── .env.local
+└── vite.config.js
+```
+
+---
+
+# Future Improvements
+
+- Persist points in PostgreSQL.
+- Add authentication and authorization.
+- Support multiple Node.js instances using Redis Adapter.
+- Add metrics and connection monitoring.
+- Implement undo/redo functionality.
+
